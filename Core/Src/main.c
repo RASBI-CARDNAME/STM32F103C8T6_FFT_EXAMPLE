@@ -25,7 +25,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+//i2c lcd 주소 
 #define lcd_address 0x3F
+
+//FFT 샘플 사이즈
 #define sample_size 1024
 /* USER CODE END PD */
 
@@ -41,18 +44,26 @@ DMA_HandleTypeDef hdma_adc1;
 I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN PV */
-uint32_t samples[sample_size];
-/*The FFT requires a buffer that is the size of the sample data.
- stm32f103c8t6 has 16KB RAM So, We will use uint32 _t [1024]. */
 
+// FFT 버퍼 배열, 4KB
+uint32_t samples[sample_size];
+
+// FFT 결과 담는 배열
 float32_t fft[sample_size];
 arm_rfft_fast_instance_f32 arfi32;
+
+//ADC 변환 상태 확인용 플래그 변수
 volatile uint8_t flags;
+
+//함수 결과 담을 변수
 arm_status status;
 
 I2C_LCD_HandleTypeDef lcd1;
+
+//LCD 출력용. 끝에는 널 문자.
 char text [17]; //16+\n = 17
 
+//주파수 탐색용 카운터
 int16_t counter;
 
 /* USER CODE END PV */
@@ -89,6 +100,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+	// lcd 라이브러리 초기화 작업
   lcd1.address = lcd_address << 1;
   lcd1.hi2c = &hi2c1;
   /* USER CODE END Init */
@@ -106,10 +118,14 @@ int main(void)
   MX_ADC1_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
+
+// 초기화 작업
   flags = 0;
   status = arm_rfft_fast_init_1024_f32(&arfi32);
+//ADC 시작
   HAL_ADC_Start_DMA(&hadc1, samples, sample_size);
 
+//LCD 초기화
   lcd_init(&lcd1);
   lcd_clear(&lcd1);
   sprintf(text,"initializing...");
@@ -125,16 +141,18 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  //ADC 변환 완료되었나 플래그 값을 확인
 	  while (flags == 0);
 	  if (flags == 1) {
-		  for (int i = 0; i<(sizeof(samples)/sizeof(samples[0])); i++) { //sizeof returns the total size, not the count!!
-			  fft[i] = (float32_t)(samples[i]);
+		  for (int i = 0; i<(sizeof(samples)/sizeof(samples[0])); i++) { // sizeof는 전체 사이즈를 반환하므로 주의
+			  fft[i] = (float32_t)(samples[i]); // 함수 인자에 맞게 형변환
 		  }
-		  arm_rfft_fast_f32(&arfi32, fft, fft, 0);
-		  arm_cmplx_mag_f32(fft, fft, sample_size/2);
-		  flags = 2;
+		  arm_rfft_fast_f32(&arfi32, fft, fft, 0); //결과는 복소수 크기 
+		  arm_cmplx_mag_f32(fft, fft, sample_size/2); //magnitude로 변환, rfft 결과는 입력한 데이터 수의 절반.
+		  flags = 2; // 변환 완료했으므로 플래그를 쓰레기값으로 변경
 	  }
 
+	  //다음 주파수 탐색
 	  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5)==0) {
 		  counter +=1;
 		  if (counter > 511) {
@@ -150,6 +168,7 @@ int main(void)
 		  lcd_gotoxy(&lcd1, 0, 1);
 		  lcd_puts(&lcd1, text);
 
+	  // 다시 FFT를 수행
 	  } else if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15)==0) {
 		  flags = 0;
 		  HAL_ADC_Start_DMA(&hadc1, samples, sample_size);
@@ -160,7 +179,7 @@ int main(void)
 		  sprintf(text,"RESET");
 		  lcd_puts(&lcd1, text);
 
-
+	  //이전 주파수 탐색
 	  } else if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_14)==0) {
 		  counter -= 1;
 		  if (counter < 0) {
@@ -367,6 +386,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+//ADC 변환 완료시 플래그 값을 변경
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc1) {
 	HAL_ADC_Stop_DMA(hadc1);
 	flags = 1;
@@ -403,4 +423,5 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
 
