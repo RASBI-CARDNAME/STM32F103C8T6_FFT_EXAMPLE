@@ -66,7 +66,7 @@ CMSIS 라이브러리 [적용법](https://blog.naver.com/hiho0718/224008803960)
 ### ⚙️ ADC 설정 및 샘플링 이론
 정확한 주파수 분석을 위해 ADC 변환 속도를 정밀하게 계산하여 설정했습니다.
 
-*   **ADC Clock:** 4 MHz (PCLK2 / 6)
+*   **ADC Clock:** 4 MHz (APB2 / 2, HSI 8MHz 사용함)
 *   **Sampling Cycles:** 14 Cycles (1.5 Sampling + 12.5 Conversion)
 *   **Sampling Rate (Fs):** 약 **285.7 KHz** (4,000,000 / 14)
 *   **FFT Points (N):** 1024
