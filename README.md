@@ -76,7 +76,7 @@ CMSIS 라이브러리 [적용법](https://blog.naver.com/hiho0718/224008803960)
 1.  **ADC(DMA):** 1024개의 아날로그 샘플을 원형 버퍼(Circular Buffer)로 수집
 2.  **RFFT 연산:** `arm_rfft_fast_f32` 함수를 사용하여 실수(Real) 데이터를 복소수(Complex)로 변환
 3.  **Magnitude 계산:** 복소수 결과의 절대값(크기)을 계산하여 스펙트럼 도출
-4.  **Peak Detection:** 크기가 가장 큰 Bin을 찾아 주파수로 환산 (`Bin_Index * 279Hz`) 후 LCD 출력
+4.  **Output:** 버튼 입력에 따른 주파수 탐색 결과를 LCD에 출력
 
 ---
 
